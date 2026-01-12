@@ -2,42 +2,51 @@ import os
 import discord
 from discord.ext import commands
 import asyncio
-import motor.motor_asyncio
 
+# 봇 권한 설정
 intents = discord.Intents.default()
 intents.message_content = True
 
-# 기존 봇 설정 유지
-bot = commands.Bot(command_prefix="/", intents=intents)
-
-# 사이트(호스팅) 환경 변수에서 직접 불러오기
-MONGODB_URI = os.getenv("MONGODB_URI")
-mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-db = mongo_client["discordbot"]
+# 봇 생성
+bot = commands.Bot(command_prefix="#", intents=intents)
 
 async def load_extensions():
-    """Cogs 폴더 내의 모든 확장을 로드합니다."""
-    # 기존 코드의 비활성화 목록 체크 로직 포함 가능
+    """Cogs 폴더의 모든 파일을 로드합니다."""
+    # Cogs 폴더가 없으면 에러가 날 수 있으니 체크
+    if not os.path.exists("Cogs"):
+        print("❌ Cogs 폴더를 찾을 수 없습니다.")
+        return
+
     for filename in os.listdir("Cogs"):
         if filename.endswith(".py") and filename != "__init__.py":
-            cog_name = filename[:-3]
             try:
-                await bot.load_extension(f"Cogs.{cog_name}")
-                print(f"✅ {cog_name}.py 로드 성공")
+                await bot.load_extension(f"Cogs.{filename[:-3]}")
+                print(f"✅ 로드 성공: {filename}")
             except Exception as e:
-                print(f"❌ {cog_name}.py 로드 실패: {e}")
+                print(f"❌ 로드 실패 ({filename}): {e}")
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user}')
-    await bot.change_presence(activity=discord.Game("게임 링크 제공"))
+    print(f'🤖 봇이 준비되었습니다: {bot.user.name}')
+    print(f'🆔 봇 ID: {bot.user.id}')
+    await bot.change_presence(activity=discord.Game("게임 대기"))
 
 async def main():
-    # 봇 실행 전 확장 로드
     async with bot:
         await load_extensions()
-        # 사이트 설정창에 등록된 DISCORD_TOKEN을 불러옵니다.
-        await bot.start(os.getenv("DISCORD_TOKEN"))
+        
+        # 환경변수에서 토큰 가져오기
+        token = os.getenv("DISCORD_TOKEN")
+        
+        if not token:
+            print("❌ 에러: 환경변수에 'DISCORD_TOKEN'이 없습니다.")
+            return
+            
+        await bot.start(token)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        # 강제 종료 시 깔끔하게 닫기
+        print("봇을 종료합니다.")
