@@ -38,30 +38,31 @@ class GameLink(commands.Cog):
         embed.add_field(name="🟡 2번 플레이어", value=f"[Yellow 접속]({yellow_url})", inline=True)
         await ctx.send(embed=embed)
 
-    # --- 추가된 오목 코드 ---
     @commands.command(name="오목")
     async def play_omok(self, ctx):
-        """멀티 플레이: 실시간 오목"""
+        """싱글(AI) 설정 및 멀티 플레이 링크 생성"""
         if not self.base_url: return await ctx.send("⚠️ GAME_URL 설정 필요")
 
-        # 1. 방 번호 생성
         room_id = random.randint(1000, 9999)
 
-        # 2. 임베드 생성 (나무색 느낌의 색상 코드 사용)
         embed = discord.Embed(
-            title="⚫⚪ 실시간 오목 대전",
-            description=f"방 번호: **{room_id}**\n흑돌이 선공입니다. 친구와 링크를 나눠 가지세요!",
+            title="⚫⚪ 오목 게임 라운지",
+            description=f"**방 번호: {room_id}**\n원하는 모드를 선택하세요!",
             color=0xdeb887 
         )
 
-        # 3. URL 생성 (omok 폴더 경로 가정)
-        # HTML 파일이 호스팅된 경로가 /omok/index.html 이라고 가정합니다.
-        black_url = f"{self.base_url}/omok/index.html?room={room_id}&color=black"
-        white_url = f"{self.base_url}/omok/index.html?room={room_id}&color=white"
+        # 1. 싱글 플레이 링크 (모드 파라미터 추가)
+        single_url = f"{self.base_url}/omok/index.html?mode=single"
+        
+        # 2. 멀티 플레이 링크 (흑/백 고정)
+        black_url = f"{self.base_url}/omok/index.html?mode=multi&room={room_id}&color=black"
+        white_url = f"{self.base_url}/omok/index.html?mode=multi&room={room_id}&color=white"
 
-        # 4. 버튼(링크) 추가
-        embed.add_field(name="⚫ 1번 플레이어 (선공)", value=f"[흑돌로 접속]({black_url})", inline=True)
-        embed.add_field(name="⚪ 2번 플레이어 (후공)", value=f"[백돌로 접속]({white_url})", inline=True)
+        embed.add_field(name="🤖 혼자 하기", value=f"[싱글 플레이 설정]({single_url})", inline=False)
+        embed.add_field(name="⚔️ 멀티 플레이 (P1)", value=f"[⚫ 흑돌로 시작]({black_url})", inline=True)
+        embed.add_field(name="⚔️ 멀티 플레이 (P2)", value=f"[⚪ 백돌로 시작]({white_url})", inline=True)
+        
+        embed.set_footer(text="버그 발생 시 화면 하단의 로그를 확인하세요.")
         
         await ctx.send(embed=embed)
 
