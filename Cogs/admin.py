@@ -8,14 +8,11 @@ import os
 import json
 
 # --- Firebase 초기화 로직 (환경 변수 전용) ---
-# 이 코드는 봇이 시작될 때 한 번만 실행됩니다.
 if not firebase_admin._apps:
-    # 1. 환경 변수에서 JSON 데이터를 가져옵니다.
     firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
     
     if firebase_creds_json:
         try:
-            # 환경 변수의 문자열을 파이썬 딕셔너리로 변환
             cred_dict = json.loads(firebase_creds_json)
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
@@ -24,7 +21,6 @@ if not firebase_admin._apps:
             print(f"❌ 환경 변수 로드 실패: {e}")
             print("환경 변수 내용이 올바른 JSON 형식인지 확인해주세요.")
     else:
-        # 환경 변수가 없을 경우 경고 메시지 출력 (파일을 찾지 않음)
         print("❌ 오류: 'FIREBASE_CREDENTIALS' 환경 변수가 설정되지 않았습니다.")
         print("배포하는 웹사이트의 설정 페이지(Secrets/Config Vars)에 환경 변수를 추가해주세요.")
 
@@ -32,7 +28,6 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         try:
-            # DB 클라이언트 연결 시도
             self.db = firestore.client()
         except:
             self.db = None
@@ -72,7 +67,6 @@ class Admin(commands.Cog):
                 updated_at = data.get('updatedAt')
                 
                 if updated_at:
-                    # 타임존 정보가 없으면 UTC로 설정하여 비교
                     if updated_at.tzinfo is None:
                         updated_at = updated_at.replace(tzinfo=datetime.timezone.utc)
                         
@@ -87,13 +81,11 @@ class Admin(commands.Cog):
             limit_kb = 1024 * 1024 # 1GB (무료 티어 한도)
             percent = (estimated_size_kb / limit_kb) * 100
 
-            # 시각적 프로그레스 바 생성
             bar_len = 20
             filled = int(round((percent / 100) * bar_len))
             if filled > bar_len: filled = bar_len
             bar_visual = "█" * filled + "░" * (bar_len - filled)
 
-            # 임베드 메시지 작성
             embed = discord.Embed(title="📊 게임 서버(DB) 상태 리포트", color=discord.Color.gold(), timestamp=now)
             embed.description = "Firebase Firestore 'omok-ultimate' 상태"
             
@@ -113,5 +105,7 @@ class Admin(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ 데이터 조회 중 오류가 발생했습니다:\n`{str(e)}`")
 
-def setup(bot):
-    bot.add_cog(Admin(bot))
+# --- 수정된 부분 ---
+# discord.py 2.0 이상에서는 setup 함수가 async여야 하고 add_cog를 await 해야 합니다.
+async def setup(bot):
+    await bot.add_cog(Admin(bot))
