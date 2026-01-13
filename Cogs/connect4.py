@@ -8,7 +8,7 @@ class Connect4(commands.Cog):
         self.bot = bot
         self.base_url = os.getenv("GAME_URL")
 
-    @commands.command(name="커넥트포")
+    @commands.command(name="커넥트포", aliases=["사목"])
     async def play_connect4(self, ctx):
         """멀티 플레이: 커넥트 포"""
         if not self.base_url: 
