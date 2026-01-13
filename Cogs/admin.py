@@ -5,23 +5,34 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 import os
+import json
 
-# --- Firebase 초기화 설정 ---
-# 주의: 봇을 실행하는 폴더에 'serviceAccountKey.json' 파일이 있어야 합니다.
-# 파일이 없다면 Firebase 콘솔 -> 프로젝트 설정 -> 서비스 계정 -> 새 비공개 키 생성에서 다운로드하세요.
+# --- Firebase 초기화 로직 (환경 변수 전용) ---
+# 이 코드는 봇이 시작될 때 한 번만 실행됩니다.
 if not firebase_admin._apps:
-    cred_path = "serviceAccountKey.json"
-    if os.path.exists(cred_path):
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
+    # 1. 환경 변수에서 JSON 데이터를 가져옵니다.
+    firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
+    
+    if firebase_creds_json:
+        try:
+            # 환경 변수의 문자열을 파이썬 딕셔너리로 변환
+            cred_dict = json.loads(firebase_creds_json)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            print("✅ 환경 변수(FIREBASE_CREDENTIALS)를 통해 Firebase에 안전하게 연결되었습니다.")
+        except Exception as e:
+            print(f"❌ 환경 변수 로드 실패: {e}")
+            print("환경 변수 내용이 올바른 JSON 형식인지 확인해주세요.")
     else:
-        print("Warning: serviceAccountKey.json not found. Database connection will fail.")
+        # 환경 변수가 없을 경우 경고 메시지 출력 (파일을 찾지 않음)
+        print("❌ 오류: 'FIREBASE_CREDENTIALS' 환경 변수가 설정되지 않았습니다.")
+        print("배포하는 웹사이트의 설정 페이지(Secrets/Config Vars)에 환경 변수를 추가해주세요.")
 
-class ServerStatusCog(commands.Cog):
+class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # DB 연결 (초기화 실패 시 None)
         try:
+            # DB 클라이언트 연결 시도
             self.db = firestore.client()
         except:
             self.db = None
@@ -32,23 +43,23 @@ class ServerStatusCog(commands.Cog):
         """HTML 게임과 연동된 Firestore DB의 상태를 점검합니다."""
         
         if not self.db:
-            return await ctx.send("❌ 데이터베이스 연결 설정이 되어있지 않습니다. `serviceAccountKey.json`을 확인하세요.")
+            return await ctx.send("❌ 데이터베이스 연결 실패. 호스팅 사이트의 환경 변수(Secrets)를 확인하세요.")
 
         await ctx.trigger_typing()
 
         try:
-            # HTML 게임에서 사용하는 경로: artifacts/omok-ultimate/public/data/rooms
-            # (appId가 'omok-ultimate'라고 가정, 변경 시 수정 필요)
+            # Firestore 경로: artifacts -> omok-ultimate -> public -> data -> rooms
             rooms_ref = self.db.collection('artifacts').document('omok-ultimate') \
                                .collection('public').document('data').collection('rooms')
             
-            # 모든 문서 가져오기 (문서 수가 매우 많을 경우 count() 쿼리 사용 권장)
+            # DB에서 모든 방 데이터 가져오기
             docs = rooms_ref.stream()
             
             total_rooms = 0
             stagnant_1d = 0
             stagnant_7d = 0
             
+            # 현재 시간 (UTC 기준)
             now = datetime.datetime.now(datetime.timezone.utc)
             one_day_ago = now - datetime.timedelta(days=1)
             seven_days_ago = now - datetime.timedelta(days=7)
@@ -57,12 +68,11 @@ class ServerStatusCog(commands.Cog):
                 total_rooms += 1
                 data = doc.to_dict()
                 
-                # 'updatedAt' 필드 확인
+                # 방의 마지막 업데이트 시간 확인
                 updated_at = data.get('updatedAt')
                 
-                # Firestore Timestamp는 datetime 객체로 변환됨
                 if updated_at:
-                    # 타임존 정보가 없는 경우를 대비해 UTC로 통일
+                    # 타임존 정보가 없으면 UTC로 설정하여 비교
                     if updated_at.tzinfo is None:
                         updated_at = updated_at.replace(tzinfo=datetime.timezone.utc)
                         
@@ -72,38 +82,36 @@ class ServerStatusCog(commands.Cog):
                     elif updated_at < one_day_ago:
                         stagnant_1d += 1
 
-            # 용량 계산 (방 1개당 약 1.2KB 가정 - JSON 문자열 크기 등 고려)
+            # 서버 용량 추산 (방 1개당 약 1.2KB로 가정)
             estimated_size_kb = total_rooms * 1.2
-            limit_kb = 1024 * 1024 # Firebase Spark 무료 용량 1GB (1,048,576 KB)
+            limit_kb = 1024 * 1024 # 1GB (무료 티어 한도)
             percent = (estimated_size_kb / limit_kb) * 100
 
-            # 프로그레스 바 생성 (20칸)
+            # 시각적 프로그레스 바 생성
             bar_len = 20
             filled = int(round((percent / 100) * bar_len))
-            # 100% 넘어가면 꽉 찬 걸로 표시
             if filled > bar_len: filled = bar_len
-            
             bar_visual = "█" * filled + "░" * (bar_len - filled)
 
-            # 임베드 출력
+            # 임베드 메시지 작성
             embed = discord.Embed(title="📊 게임 서버(DB) 상태 리포트", color=discord.Color.gold(), timestamp=now)
-            embed.description = "Firebase Firestore 'omok-ultimate' 컬렉션 조회 결과"
+            embed.description = "Firebase Firestore 'omok-ultimate' 상태"
             
             embed.add_field(name="🏠 총 생성된 방", value=f"**{total_rooms}**개", inline=False)
-            embed.add_field(name="💤 1일 이상 변동 없음", value=f"{stagnant_1d}개", inline=True)
-            embed.add_field(name="🕸️ 7일 이상 변동 없음", value=f"{stagnant_7d}개", inline=True)
+            embed.add_field(name="💤 1일 이상 미활동", value=f"{stagnant_1d}개", inline=True)
+            embed.add_field(name="🕸️ 7일 이상 미활동", value=f"{stagnant_7d}개", inline=True)
             
             embed.add_field(
-                name="💾 저장소 용량 상태 (무료 티어 기준)", 
+                name="💾 저장소 용량 (추정)", 
                 value=f"`{bar_visual}` **{percent:.4f}%**\n(약 {estimated_size_kb:.2f} KB 사용 중)", 
                 inline=False
             )
             
-            embed.set_footer(text=f"요청자: {ctx.author} | 데이터 소스: Firestore")
+            embed.set_footer(text=f"관리자 전용 | {ctx.author}")
             await ctx.send(embed=embed)
 
         except Exception as e:
             await ctx.send(f"❌ 데이터 조회 중 오류가 발생했습니다:\n`{str(e)}`")
 
 def setup(bot):
-    bot.add_cog(ServerStatusCog(bot))
+    bot.add_cog(Admin(bot))
