@@ -6,6 +6,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import os
 import json
+import traceback # 상세 오류 로그를 위해 추가
 
 # --- Firebase 초기화 로직 (환경 변수 전용) ---
 if not firebase_admin._apps:
@@ -37,6 +38,7 @@ class Admin(commands.Cog):
     async def server_status(self, ctx):
         """HTML 게임과 연동된 Firestore DB의 상태를 점검합니다."""
         
+        # 1. DB 클라이언트가 로드되지 않았을 때
         if not self.db:
             return await ctx.send("❌ 데이터베이스 연결 실패. 호스팅 사이트의 환경 변수(Secrets)를 확인하세요.")
 
@@ -103,9 +105,21 @@ class Admin(commands.Cog):
             await ctx.send(embed=embed)
 
         except Exception as e:
+            # 상세 오류를 콘솔에 출력하고 채팅창에도 알림
+            traceback.print_exc()
             await ctx.send(f"❌ 데이터 조회 중 오류가 발생했습니다:\n`{str(e)}`")
 
-# --- 수정된 부분 ---
-# discord.py 2.0 이상에서는 setup 함수가 async여야 하고 add_cog를 await 해야 합니다.
+    # --- 에러 핸들러 추가 ---
+    @server_status.error
+    async def server_status_error(self, ctx, error):
+        # 봇 소유자가 아닐 경우
+        if isinstance(error, commands.NotOwner):
+            await ctx.send("🚫 **권한 오류**: 이 명령어는 봇 소유자만 사용할 수 있습니다.")
+        # 기타 오류 발생 시
+        else:
+            await ctx.send(f"⚠️ **명령어 실행 오류**: `{error}`")
+            print(f"[Admin Cog Error] {error}")
+
+# discord.py 2.0 이상 호환
 async def setup(bot):
     await bot.add_cog(Admin(bot))
