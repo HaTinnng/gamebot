@@ -105,9 +105,23 @@ class Admin(commands.Cog):
                 await ctx.send(embed=embed)
 
             except Exception as e:
-                # 상세 오류를 콘솔에 출력하고 채팅창에도 알림
+                # 상세 오류를 콘솔에 출력
                 traceback.print_exc()
-                await ctx.send(f"❌ 데이터 조회 중 오류가 발생했습니다:\n`{str(e)}`")
+                
+                error_msg = str(e)
+                # API 비활성화 오류에 대한 친절한 안내
+                if "SERVICE_DISABLED" in error_msg or "Cloud Firestore API" in error_msg:
+                     await ctx.send(
+                        "❌ **구글 클라우드 설정 오류**\n"
+                        "Firestore API가 활성화되지 않았습니다. 봇(백엔드)에서 접속하려면 API 사용 설정이 필요합니다.\n\n"
+                        "👇 **해결 방법**\n"
+                        "1. 아래 링크에 접속하세요.\n"
+                        "2. 상단의 **'사용 설정(ENABLE)'** 버튼을 클릭하세요.\n"
+                        "3. 1~2분 뒤 다시 명령어를 시도하세요.\n"
+                        "🔗 https://console.developers.google.com/apis/api/firestore.googleapis.com/overview"
+                    )
+                else:
+                    await ctx.send(f"❌ 데이터 조회 중 오류가 발생했습니다:\n`{error_msg}`")
 
     # --- 에러 핸들러 추가 ---
     @server_status.error
