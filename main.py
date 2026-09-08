@@ -48,5 +48,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        # 강제 종료 시 깔끔하게 닫기
         print("봇을 종료합니다.")
