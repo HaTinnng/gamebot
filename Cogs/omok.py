@@ -15,7 +15,7 @@ class Omok(commands.Cog):
 
         embed = discord.Embed(
             title="⚫⚪ 실시간 오목 온라인",
-            description="정교한 Minimax AI 대전 및 6자리 방 코드를 통한 실시간 멀티플레이를 지원합니다!",
+            description="정교한 Minimax AI 대전 및 방 코드를 통한 실시간 멀티플레이를 지원합니다!",
             color=0xdeb887 
         )
 
