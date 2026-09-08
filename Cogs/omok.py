@@ -24,7 +24,7 @@ class Omok(commands.Cog):
         )
 
         # 현재 웹 구조에 맞는 URL 경로 설정 (필요시 폴더 구조에 맞게 수정)
-        game_url = f"{self.base_url}/omok/test.html"
+        game_url = f"{self.base_url}/omok/index.html"
 
         embed.add_field(name="🎮 오목 게임 바로가기", value=f"[게임 접속하기]({game_url})", inline=False)
         embed.add_field(name="📌 안내", value=f"멀티 플레이 시 위 방 코드(`{room_id}`)를 입력해 입장하세요.", inline=False)
