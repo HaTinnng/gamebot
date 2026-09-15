@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import os
 
-class Quiz(commands.Cog):
+class quiz3(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.base_url = os.getenv("GAME_URL")
