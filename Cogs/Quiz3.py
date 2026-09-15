@@ -28,4 +28,4 @@ class quiz3(commands.Cog):
         await ctx.send(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(Quiz(bot))
+    await bot.add_cog(quiz3(bot))
