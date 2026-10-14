@@ -46,7 +46,7 @@ class GameMenu(commands.Cog):
 
         embed.add_field(
             name="4️⃣ 포켓몬타입", 
-            value="> **명령어:** `!틱택토`, `!틱` \n> **설명:** 각 지방 네임드 트레이너의 타입을 맞춰보세요!", 
+            value="> **명령어:** `!포켓몬타입`, `!타입` \n> **설명:** 각 지방 네임드 트레이너의 타입을 맞춰보세요!", 
             inline=False
         )
 
