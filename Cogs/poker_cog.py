@@ -8,7 +8,7 @@ class PokerGame(commands.Cog):
         # main.py 또는 .env 파일에서 설정한 웹 호스팅 기본 주소 (예: https://my-game.web.app)
         self.base_url = os.getenv("GAME_URL")
 
-    @commands.command(name="포커", aliases=["poker", "비디오포커"])
+    @commands.command(name="포커", aliases=["poker", "비디오포커", "1인포커!"])
     async def play_poker(self, ctx):
         """비디오 포커 게임 링크를 생성합니다."""
         
