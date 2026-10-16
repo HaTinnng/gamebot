@@ -7,7 +7,7 @@ class DodgeAndSurvive(commands.Cog):
         self.bot = bot
         self.base_url = os.getenv("GAME_URL")
 
-    @commands.command(name="닷지", aliases=["닷지앤서바이브", "탄막피하기"])
+    @commands.command(name="닷지", aliases=["탄막", "탄막피하기", "피하기"])
     async def play_dodge(self, ctx):
         """실시간 탄막 회피 아케이드 게임 '닷지 앤 서바이브' 로비 링크 생성"""
         if not self.base_url: 
