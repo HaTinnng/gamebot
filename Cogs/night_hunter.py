@@ -7,7 +7,7 @@ class NightHunter(commands.Cog):
         self.bot = bot
         self.base_url = os.getenv("GAME_URL")
 
-    @commands.command(name="밤의사냥꾼", aliases=["사냥꾼", "나이트헌터"])
+    @commands.command(name="밤의사냥꾼", aliases=["사냥꾼", "나이트헌터", "뱀서"])
     async def play_night_hunter(self, ctx):
         """실시간 괴물 사냥 생존 아케이드 게임 '밤의 사냥꾼' 로비 링크 생성"""
         if not self.base_url: 
